@@ -1,0 +1,12 @@
+﻿using Film.Application.Dtos;
+
+namespace Film.Application.Interfaces;
+
+public interface IMovieService
+{
+    Task<IEnumerable<MovieDto>> GetAllMoviesAsync();
+    Task<MovieDto?> GetMovieByIdAsync(int id);
+    Task<MovieDto> UpdateAsync(int id, CreateMovieDto dto);
+    Task CreateAsync(CreateMovieDto dto);
+    Task<bool> DeleteAsync(int id);
+}
