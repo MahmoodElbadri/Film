@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Film.Application.Dtos;
 using Film.Application.Interfaces;
 using Film.Domain.Entities;
 using Film.Domain.Exceptions;
+using Film.Domain.Shared;
 using Film.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,11 +36,17 @@ public class MovieService(IMapper mapper, MovieDbContext db) : IMovieService
         }
     }
 
-    public async Task<IEnumerable<MovieDto>> GetAllMoviesAsync(int pageNumber, int pageSize)
+    public async Task<PagedResult<MovieDto>> GetAllMoviesAsync(int pageNumber, int pageSize)
     {
-        var movies = await db.Movies.ToListAsync();
-        var moviesDto = mapper.Map<IEnumerable<MovieDto>>(movies);
-        return moviesDto;
+        var movies = db.Movies.OrderByDescending(tmp => tmp.Id);
+        var total = await db.Movies.CountAsync();
+        var items = await movies
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ProjectTo<MovieDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+
+        return new PagedResult<MovieDto>(items, total, pageNumber, pageSize);
     }
 
     public async Task<MovieDto?> GetMovieByIdAsync(int id)

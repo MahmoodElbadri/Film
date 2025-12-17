@@ -19,9 +19,9 @@ public class MoviesController(IMovieService _movieService) : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllMovies([FromQuery]int pageNumber, [FromQuery]int pageSize)
+    public async Task<IActionResult> GetAllMovies([FromQuery]int pageNumber = 1, [FromQuery]int pageSize = 5)
     {
-        var movies = await _movieService.GetAllMoviesAsync(int pageNumber, int pageSize);
+        var movies = await _movieService.GetAllMoviesAsync(pageNumber, pageSize);
         return Ok(movies);
     }
 
