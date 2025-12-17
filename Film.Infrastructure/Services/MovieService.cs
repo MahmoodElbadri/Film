@@ -10,11 +10,13 @@ namespace Film.Infrastructure.Services;
 
 public class MovieService(IMapper mapper, MovieDbContext db) : IMovieService
 {
-    public async Task CreateAsync(CreateMovieDto dto)
+    public async Task<MovieDto> CreateAsync(CreateMovieDto dto)
     {
         var movie = mapper.Map<Movie>(dto);
         db.Add(movie); //here you are just marking the entity as added in tracker we only need the async in saving 
         await db.SaveChangesAsync();
+        var movieDto = mapper.Map<MovieDto>(movie);
+        return movieDto;
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -32,7 +34,7 @@ public class MovieService(IMapper mapper, MovieDbContext db) : IMovieService
         }
     }
 
-    public async Task<IEnumerable<MovieDto>> GetAllMoviesAsync()
+    public async Task<IEnumerable<MovieDto>> GetAllMoviesAsync(int pageNumber, int pageSize)
     {
         var movies = await db.Movies.ToListAsync();
         var moviesDto = mapper.Map<IEnumerable<MovieDto>>(movies);

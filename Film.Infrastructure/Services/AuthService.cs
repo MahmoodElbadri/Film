@@ -6,6 +6,7 @@ using Film.Application.Interfaces;
 using Film.Domain.Entities;
 using Film.Domain.Enums;
 using Film.Infrastructure.Data;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -19,7 +20,7 @@ public class AuthService(MovieDbContext db, IConfiguration config) : IAuthServic
         var isUserExist = await db.AppUsers.FirstOrDefaultAsync(tmp => tmp.Email == dto.Email);
         
         if (isUserExist == null || !BCrypt.Net.BCrypt.Verify(dto.Password, isUserExist.PasswordHash))
-            throw new Exception("Invalid credentials.");
+            throw new BadHttpRequestException("Invalid credentials.");
 
         return GenerateJwtToken(isUserExist);
     }
@@ -29,7 +30,7 @@ public class AuthService(MovieDbContext db, IConfiguration config) : IAuthServic
         var isUserExist = db.AppUsers.Any(tmp => tmp.Email == dto.Email);
         if (isUserExist)
         {
-            throw new Exception("User already registered");
+            throw new BadHttpRequestException("User already registered");
         }
 
         var user = new AppUser()

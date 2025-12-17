@@ -14,14 +14,14 @@ public class MoviesController(IMovieService _movieService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> CreateMovie(CreateMovieDto dto)
     {
-        await _movieService.CreateAsync(dto);
-        return Ok();
+        var movie = await _movieService.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetMovieById), new { id = movie.Id }, dto);
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllMovies()
+    public async Task<IActionResult> GetAllMovies([FromQuery]int pageNumber, [FromQuery]int pageSize)
     {
-        var movies = await _movieService.GetAllMoviesAsync();
+        var movies = await _movieService.GetAllMoviesAsync(int pageNumber, int pageSize);
         return Ok(movies);
     }
 
@@ -33,6 +33,7 @@ public class MoviesController(IMovieService _movieService) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<IActionResult> UpdateMovie(int id, CreateMovieDto dto)
     {
         await _movieService.UpdateAsync(id, dto);
@@ -40,6 +41,7 @@ public class MoviesController(IMovieService _movieService) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> DeleteMovie(int id)
     {
         await _movieService.DeleteAsync(id);
