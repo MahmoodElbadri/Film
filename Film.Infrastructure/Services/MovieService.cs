@@ -17,12 +17,28 @@ public class MovieService(IMapper mapper, MovieDbContext db, ICacheService redis
         var movie = mapper.Map<Movie>(dto);
         db.Add(movie); //here you are just marking the entity as added in tracker we only need the async in saving 
         await db.SaveChangesAsync();
+        var cachedList = redis.GetCache<List<MovieDto>>(CacheKeys.AllMovies());
+        if (cachedList != null)
+        {
+            await redis.RemoveCache(CacheKeys.AllMovies());
+        }
         var movieDto = mapper.Map<MovieDto>(movie);
         return movieDto;
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
+        var cachedMovie = await redis.GetCache<MovieDto>(CacheKeys.Movie(id));
+        if (cachedMovie != null)
+        {
+            await redis.RemoveCache(CacheKeys.AllMovies());
+            await redis.RemoveCache(CacheKeys.Movie(id));
+            int movieLength = db.Movies.Count();
+            for (int i = 1; i <= movieLength; i++)
+            {
+                await redis.RemoveCache(CacheKeys.MoviesList(i, 6, ""));
+            }
+        }
         var movie = await db.Movies.FirstOrDefaultAsync(tmp => tmp.Id == id);
         if (movie == null)
         {
@@ -45,31 +61,31 @@ public class MovieService(IMapper mapper, MovieDbContext db, ICacheService redis
             .Take(pageSize)
             .ProjectTo<MovieDto>(mapper.ConfigurationProvider)
             .ToListAsync();
-        var cachedItems = await redis.GetCache<List<MovieDto>>($"allMovies page number: {pageNumber}, page size: {pageSize}, search term: {searchTerm}");
+        var cachedItems = await redis.GetCache<List<MovieDto>>(CacheKeys.MoviesList(pageNumber, pageSize, searchTerm));
         if (cachedItems != null)
         {
             return new PagedResult<MovieDto>(cachedItems, total, pageNumber, pageSize);
         }
-        await redis.SetCache($"allMovies page number: {pageNumber}, page size: {pageSize}, search term: {searchTerm}", items);
+        await redis.SetCache(CacheKeys.MoviesList(pageNumber, pageSize, searchTerm), items);
         return new PagedResult<MovieDto>(items, total, pageNumber, pageSize);
     }
     public async Task<IEnumerable<MovieDto>> GetAllMoviesAsync()
     {
 
-        var cachedMovies = await redis.GetCache<List<MovieDto>>("allMovies");
+        var cachedMovies = await redis.GetCache<List<MovieDto>>(CacheKeys.AllMovies());
         if (cachedMovies != null)
         {
             return cachedMovies;
         }
         var movies = await db.Movies.ProjectTo<MovieDto>(mapper.ConfigurationProvider).ToListAsync();
-        
-        await redis.SetCache("allMovies", movies);
+
+        await redis.SetCache(CacheKeys.AllMovies(), movies);
         return movies;
     }
 
     public async Task<MovieDto?> GetMovieByIdAsync(int id)
     {
-        var cachedMovie = await redis.GetCache<MovieDto>($"movie id: {id}");
+        var cachedMovie = await redis.GetCache<MovieDto>(CacheKeys.Movie(id));
         if (cachedMovie != null)
         {
             return cachedMovie;
@@ -80,16 +96,22 @@ public class MovieService(IMapper mapper, MovieDbContext db, ICacheService redis
             throw new NotFoundException(nameof(Movie), id.ToString());
         }
         var movieDto = mapper.Map<MovieDto>(movie);
-        await redis.SetCache($"movie id: {id}", movieDto);
+        await redis.SetCache(CacheKeys.Movie(id), movieDto);
         return movieDto;
     }
 
     public async Task<MovieDto> UpdateAsync(int id, CreateMovieDto dto)
     {
-        var cachedMovie = await redis.GetCache<MovieDto>($"movie id: {id}");
+        var cachedMovie = await redis.GetCache<MovieDto>(CacheKeys.Movie(id));
         if (cachedMovie != null)
         {
-            await redis.RemoveCache($"movie id: {id}");
+            await redis.RemoveCache(CacheKeys.AllMovies());
+            await redis.RemoveCache(CacheKeys.Movie(id));
+            int movieLength = db.Movies.Count();
+            for(int i = 1; i <= movieLength; i++)
+            {
+                await redis.RemoveCache(CacheKeys.MoviesList(i, 6, ""));
+            }
         }
         var movie = await db.Movies.FindAsync(id);
         if (movie == null)
