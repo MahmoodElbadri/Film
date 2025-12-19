@@ -7,7 +7,8 @@ public class MovieDbContext(DbContextOptions<MovieDbContext> options):DbContext(
 {
     public DbSet<Movie> Movies { get; set; }
     public DbSet<AppUser> AppUsers { get; set; }
-    
+    public DbSet<Review> Reviews { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
