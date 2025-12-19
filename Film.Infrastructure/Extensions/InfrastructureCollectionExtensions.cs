@@ -22,5 +22,6 @@ public static class InfrastructureCollectionExtensions
         services.AddAutoMapper(typeof(InfrastructureCollectionExtensions).Assembly);
         services.AddScoped<ICacheService, CacheService>();
         services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect("localhost"));
+        services.AddScoped<IEmailService, EmailService>();
     }
 }

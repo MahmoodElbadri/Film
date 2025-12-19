@@ -1,4 +1,5 @@
 using Film.Api.Middlewares;
+using Film.Application.Configurations;
 using Film.Application.Extensions;
 using Film.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -80,15 +81,14 @@ builder.Services.AddCors(options =>
             .WithOrigins("http://localhost:4200");
     });
 });
+builder.Services.Configure<BrevoSettings>(builder.Configuration.GetSection("Brevo"));
 
 
 var app = builder.Build();
 
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
@@ -96,14 +96,14 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = string.Empty;
     });
 }
-app.UseMiddleware<ErrorHandlingMiddleware>();
 
-app.UseCors("AllowAngular");
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
+app.UseCors("AllowAngular");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
