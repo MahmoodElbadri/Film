@@ -11,79 +11,78 @@ using Microsoft.Extensions.Logging;
 
 namespace Film.Infrastructure.Services;
 
-public class ReviewService(IEmailService emailService,
+public class ReviewService(
+    IEmailService emailService,
     IMovieService movieService,
     ILogger<ReviewService> logger,
     ICacheService redis,
     IMapper mapper,
     MovieDbContext db
-    ) : IReviewService
+) : IReviewService
 {
     public async Task<ReviewDto> AddReviewAsync(CreateReviewDto dto, int userId)
     {
-        var isMovieExist = await IsMovieExist(dto.MovieId);
-        if (!isMovieExist)
-        {
+        if (!await IsMovieExistAsync(dto.MovieId))
             throw new BadHttpRequestException($"Movie No.{dto.MovieId} not found.");
-        }
+
+        // Invalidate caches
+        await redis.RemoveCache(CacheKeys.AllReviewsForMovie(dto.MovieId));
+        await redis.RemoveCache(CacheKeys.AverageRatingForMovie(dto.MovieId));
 
         var review = mapper.Map<Review>(dto);
         review.UserId = userId;
+
         db.Reviews.Add(review);
         await db.SaveChangesAsync();
-        var savedReview = await db
-            .Reviews
-            .Include(tmp=>tmp.User)
-            .FirstOrDefaultAsync(tmp=>tmp.Id == review.Id);
-        var reviewDto = mapper.Map<ReviewDto>(savedReview);
-        return reviewDto;
+
+        var savedReview = await db.Reviews
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r => r.Id == review.Id);
+
+        return mapper.Map<ReviewDto>(savedReview);
     }
 
     public async Task<double> GetAverageRatingForMovieAsync(int movieId)
     {
-        var isMovieExist = await IsMovieExist(movieId);
-        if (!isMovieExist)
-        {
-            throw new BadHttpRequestException($"Movie No.{movieId} not found.");
-        }
-        return await GetAverageRating(movieId);
-    }
+        var cached = await redis.GetCache<double>(CacheKeys.AverageRatingForMovie(movieId));
+        if (cached != default) return cached;
 
+        if (!await IsMovieExistAsync(movieId))
+            throw new BadHttpRequestException($"Movie No.{movieId} not found.");
+
+        var avg = await GetAverageRatingAsync(movieId);
+        await redis.SetCache(CacheKeys.AverageRatingForMovie(movieId), avg);
+        return avg;
+    }
 
     public async Task<IEnumerable<ReviewDto>> GetReviewsByMovieIdAsync(int movieId)
     {
-        var isMovieExist = await IsMovieExist(movieId);
-        if (!isMovieExist)
-        {
+        var cached = await redis.GetCache<List<ReviewDto>>(CacheKeys.AllReviewsForMovie(movieId));
+        if (cached is not null) return cached;
+
+        if (!await IsMovieExistAsync(movieId))
             throw new BadHttpRequestException($"Movie No.{movieId} not found.");
-        }
-        var reviews = await db
-            .Reviews
-            .Include(tmp => tmp.User)
-            .Where(tmp => tmp.MovieId == movieId)
+
+        var reviews = await db.Reviews
+            .Include(r => r.User)
+            .Where(r => r.MovieId == movieId)
             .ToListAsync();
 
         var reviewDtos = mapper.Map<List<ReviewDto>>(reviews);
+        await redis.SetCache(CacheKeys.AllReviewsForMovie(movieId), reviewDtos);
         return reviewDtos;
     }
 
-    private async Task<bool> IsMovieExist(int movieId)
-    {
-        var movie = await movieService.GetMovieByIdAsync(movieId);
-        return movie is not null;
-    }
+    private async Task<bool> IsMovieExistAsync(int movieId)
+        => await movieService.GetMovieByIdAsync(movieId) is not null;
 
-    private async Task<double> GetAverageRating(int movieId)
+    private async Task<double> GetAverageRatingAsync(int movieId)
     {
-        var reviews = await db
-            .Reviews
-            .Where(tmp => tmp.MovieId == movieId)
-            .ToListAsync();
-        if (reviews.Count == 0)
-        {
-            return 0;
-        }
-        return reviews.Average(tmp => (double)tmp.Rating);
-    }
+        if (!await db.Reviews.AnyAsync(r => r.MovieId == movieId)) return 0;
 
+        return await db.Reviews
+            .Where(r => r.MovieId == movieId)
+            .AverageAsync(r => (double)r.Rating);
+    }
 }
+

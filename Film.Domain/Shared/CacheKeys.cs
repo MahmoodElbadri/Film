@@ -2,12 +2,14 @@
 
 public static class CacheKeys
 {
-    //Cache Keys for Movies
-    public static string MoviesList(int page, int size, string? searchTerm) => $"allMovies:{page}:{size}:{searchTerm}";
-    public static string Movie(int id) => $"movie:{id}";
-    public static string AllMovies() => $"allMovies";
+    // Movies
+    public static string MoviesList(int page, int size, string? searchTerm)
+        => $"movies:list:{page}:{size}:{searchTerm}";
+    public static string Movie(int id) => $"movies:{id}";
+    public static string AllMovies() => $"movies:all";
 
-    //Cache Keys for Reviews
-    public static string Review(int movieId) => $"review:{movieId}";
-    public static string AllReviews() => $"allReviews";
+    // Reviews
+    public static string ReviewForMovieId(int movieId) => $"reviews:{movieId}";
+    public static string AllReviewsForMovie(int movieId) => $"reviews:all:{movieId}";
+    public static string AverageRatingForMovie(int movieId) => $"reviews:avg:{movieId}";
 }
