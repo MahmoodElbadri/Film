@@ -19,32 +19,71 @@ public class ReviewService(IEmailService emailService,
     MovieDbContext db
     ) : IReviewService
 {
-    public async Task AddReviewAsync(CreateReviewDto dto, string userId)
+    public async Task<ReviewDto> AddReviewAsync(CreateReviewDto dto, int userId)
     {
-        if (await IsMovieExist(dto.MovieId))
+        var isMovieExist = await IsMovieExist(dto.MovieId);
+        if (!isMovieExist)
         {
-            throw new BadHttpRequestException("Movie not found.");
+            throw new BadHttpRequestException($"Movie No.{dto.MovieId} not found.");
         }
 
         var review = mapper.Map<Review>(dto);
         review.UserId = userId;
         db.Reviews.Add(review);
         await db.SaveChangesAsync();
+        var savedReview = await db
+            .Reviews
+            .Include(tmp=>tmp.User)
+            .FirstOrDefaultAsync(tmp=>tmp.Id == review.Id);
+        var reviewDto = mapper.Map<ReviewDto>(savedReview);
+        return reviewDto;
     }
 
-    public Task<double> GetAverageRatingAsync(int movieId)
+    public async Task<double> GetAverageRatingForMovieAsync(int movieId)
     {
-        throw new NotImplementedException();
+        var isMovieExist = await IsMovieExist(movieId);
+        if (!isMovieExist)
+        {
+            throw new BadHttpRequestException($"Movie No.{movieId} not found.");
+        }
+        return await GetAverageRating(movieId);
     }
 
-    public Task<IEnumerable<ReviewDto>> GetReviewsByMovieIdAsync(int movieId)
+
+    public async Task<IEnumerable<ReviewDto>> GetReviewsByMovieIdAsync(int movieId)
     {
-        throw new NotImplementedException();
+        var isMovieExist = await IsMovieExist(movieId);
+        if (!isMovieExist)
+        {
+            throw new BadHttpRequestException($"Movie No.{movieId} not found.");
+        }
+        var reviews = await db
+            .Reviews
+            .Include(tmp => tmp.User)
+            .Where(tmp => tmp.MovieId == movieId)
+            .ToListAsync();
+
+        var reviewDtos = mapper.Map<List<ReviewDto>>(reviews);
+        return reviewDtos;
     }
 
     private async Task<bool> IsMovieExist(int movieId)
     {
-        var movie = await db.Movies.FindAsync(movieId);
+        var movie = await movieService.GetMovieByIdAsync(movieId);
         return movie is not null;
     }
+
+    private async Task<double> GetAverageRating(int movieId)
+    {
+        var reviews = await db
+            .Reviews
+            .Where(tmp => tmp.MovieId == movieId)
+            .ToListAsync();
+        if (reviews.Count == 0)
+        {
+            return 0;
+        }
+        return reviews.Average(tmp => (double)tmp.Rating);
+    }
+
 }

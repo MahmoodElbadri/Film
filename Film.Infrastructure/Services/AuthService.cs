@@ -1,6 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using AutoMapper;
 using Film.Application.Dtos;
 using Film.Application.Interfaces;
 using Film.Domain.Entities;
@@ -13,8 +14,15 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Film.Infrastructure.Services;
 
-public class AuthService(MovieDbContext db, IConfiguration config) : IAuthService
+public class AuthService(MovieDbContext db, IConfiguration config, IMapper mapper) : IAuthService
 {
+    public async Task<UserDto> getUser(int userId)
+    {
+        var user = await db.AppUsers.FirstOrDefaultAsync(tmp => tmp.Id == userId);
+        var userDto = mapper.Map<UserDto>(user);
+        return userDto;
+    }
+
     public async Task<string> Login(LoginDto dto)
     {
         var isUserExist = await db.AppUsers.FirstOrDefaultAsync(tmp => tmp.Email == dto.Email);
