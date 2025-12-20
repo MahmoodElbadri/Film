@@ -23,5 +23,6 @@ public static class InfrastructureCollectionExtensions
         services.AddScoped<ICacheService, CacheService>();
         services.AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect("localhost"));
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IReviewService, ReviewService>();
     }
 }

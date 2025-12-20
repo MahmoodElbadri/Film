@@ -8,7 +8,8 @@ public class ReviewProfile:Profile
 {
     public ReviewProfile()
     {
-        CreateMap<CreateReviewDto, Review>();
+        CreateMap<CreateReviewDto, Review>()
+            ;
         CreateMap<Review, ReviewDto>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName));
     }
