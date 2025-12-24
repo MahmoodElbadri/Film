@@ -15,39 +15,77 @@ FilmHub is a full-stack web application built with **.NET 8 Web API** and **Angu
   - Image support for movie posters
 - 🌟 **Reviews System**
   - Users can add ratings and comments for movies
-  - Real-time updates (ready for SignalR integration)
 - 👤 **User Profile**
   - Editable name, password, and profile image
-  - Images stored securely in `wwwroot/profile-images`
+- ❤️ **Watchlist**
+  - Add or remove movies from personal watchlist
 - 📧 **Email Notifications**
-  - Send transactional emails on new movie creation or updates (via Brevo API)
+  - Send transactional emails on new movie creation or updates
 - ⚡ **Redis Caching**
   - Improved performance for movies and profiles
 - 🎨 **Modern UI**
-  - Built with Angular 17 + Bootstrap + ngx-charts for analytics dashboard
+  - Built with Angular 17 + Bootstrap for responsive design
 
 ---
 
 ## 🛠️ Tech Stack
 
-### 🔹 Backend (API)
+### 🔹 Backend
 - **.NET 8 Web API**
 - **Entity Framework Core**
 - **AutoMapper**
 - **Redis (StackExchange.Redis)**
-- **Serilog**
-- **Brevo Email SDK**
 - **JWT Authentication**
 
-### 🔹 Frontend (Client)
-- **Angular 18**
-- **RxJS / Signals**
-- **ngx-toastr** for notifications
-- **ngx-spinner** for loading UI
-- **ngx-charts** for dashboard analytics
-- **Bootstrap 5** for styling
 
 ---
 
-## 🧱 Architecture
+## 🧱 Project Structure
 
+```
+FilmHub
+├── Film.Api                → API Controllers & Services
+├── Film.Application        → DTOs & Interfaces
+├── Film.Domain             → Entities & Models
+└──  Film.Infrastructure     → Data Access & External Services
+```
+
+---
+
+## ⚙️ Setup Instructions
+
+### Backend
+```bash
+cd Film.Api
+dotnet restore
+dotnet ef database update
+dotnet run
+```
+
+---
+
+## 📊 Dashboard Features
+
+- Movie statistics and analytics
+- Genre distribution charts
+- Recent movies overview
+
+---
+
+## 🚀 API Endpoints
+
+- `https://localhost:7294/swagger` - API Documentation
+- `http://localhost:4200` - Frontend Application
+
+---
+
+## 👨‍💻 About the Developer
+
+**Badri** - Full Stack Developer
+- Experience with Angular and .NET technologies
+- Focused on collaborative development and code review
+- Currently working on large-scale Angular and .NET projects
+
+---
+
+⭐ *A comprehensive movie management solution built with modern web technologies*
