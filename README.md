@@ -56,7 +56,7 @@ FilmHub
 
 ### Backend
 ```bash
-cd Film.Api
+cd Film.Api 
 dotnet restore
 dotnet ef database update
 dotnet run
